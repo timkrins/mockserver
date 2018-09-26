@@ -2,11 +2,12 @@
 
 var http        = require('http');
 var https       = require('https');
-var mockserver  = require('./../mockserver');
+var mockserver  = require('../mockserver');
 var argv        = require('yargs').argv;
-var colors      = require('colors')
-var fs          = require('fs')
+var colors      = require('colors');
+var fs          = require('fs');
 var info        = require('./../package.json');
+var fakeCert    = require('./utils/generateFakeCert');
 var mocks       = argv.m || argv.mocks;
 var port        = argv.p || argv.port;
 var verbose     = !(argv.q || argv.quiet);
@@ -33,10 +34,19 @@ if (!mocks || !port) {
   ].join("\n"));
 } else {
   if(ssl) {
-    var options = {
-      key: fs.readFileSync(key),
-      cert: fs.readFileSync(cert)
-    };
+    if(fs.existsSync(key) && fs.existsSync(cert)) {
+      var options = {
+        key: fs.readFileSync(key),
+        cert: fs.readFileSync(cert)
+      };
+    } else {
+      var cert = fakeCert();
+      var options = {
+        key: cert,
+        cert: cert
+      };
+    }
+
     https.createServer(options, mockserver(mocks, verbose)).listen(port);
   } else {
     http.createServer(mockserver(mocks, verbose)).listen(port);
